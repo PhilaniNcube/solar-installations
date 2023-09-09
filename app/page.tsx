@@ -15,7 +15,7 @@ import {
   OverlayView,
   PolygonF
 } from "@react-google-maps/api";
-import { DataResponse, GeocodingResponse } from "@/interfaces";
+import { DataResponse, DataResponseError, GeocodingResponse } from "@/interfaces";
 import { AreaChart } from 'lucide-react'
 import {
   BarChart,
@@ -38,6 +38,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from '@/components/ui/use-toast'
 
 
 const data = [
@@ -144,6 +145,7 @@ export default function Home() {
      url.searchParams.append("location.longitude", location.lng.toString());
 
 
+
     const res = await fetch(url, {
       method: "GET",
     })
@@ -151,7 +153,19 @@ export default function Home() {
       .then((data) => data)
       .catch((err) => console.log(err));
 
-    const solar: DataResponse = await res;
+
+
+    const solar: DataResponse  = await res;
+
+    if (solar.name === undefined) {
+      toast({
+        title: "Error",
+        description: "There was an error retrieving the data. Some areas are not yet covered by this tool. Your city/country is not yet covered.",
+        variant: "destructive"
+      })
+      setLoading(false);
+      return;
+    }
 
 
 

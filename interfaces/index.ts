@@ -162,3 +162,12 @@ export type GeocodingResponse = {
   }[]
   status: string;
 }
+
+
+export type DataResponseError = {
+  error: {
+    code: number;
+    message: string;
+    status: string;
+  }
+}

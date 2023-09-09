@@ -1,113 +1,373 @@
+"use client"
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
 import Image from 'next/image'
+import { FormEvent, useMemo, useState } from "react";
+import {
+  GoogleMap,
+  useLoadScript,
+  Marker,
+  GoogleMapProps,
+  Polygon,
+  OverlayView,
+  PolygonF
+} from "@react-google-maps/api";
+import { DataResponse, GeocodingResponse } from "@/interfaces";
+import { AreaChart } from 'lucide-react'
+import {
+  BarChart,
+  Bar,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+
+const data = [
+  {
+    name: "Page A",
+    uv: 4000,
+    pv: 2400,
+    amt: 2400,
+  },
+  {
+    name: "Page B",
+    uv: 3000,
+    pv: 1398,
+    amt: 2210,
+  },
+  {
+    name: "Page C",
+    uv: 2000,
+    pv: 9800,
+    amt: 2290,
+  },
+  {
+    name: "Page D",
+    uv: 2780,
+    pv: 3908,
+    amt: 2000,
+  },
+  {
+    name: "Page E",
+    uv: 1890,
+    pv: 4800,
+    amt: 2181,
+  },
+  {
+    name: "Page F",
+    uv: 2390,
+    pv: 3800,
+    amt: 2500,
+  },
+  {
+    name: "Page G",
+    uv: 3490,
+    pv: 4300,
+    amt: 2100,
+  },
+];
 
 export default function Home() {
+
+   const { isLoaded, loadError } = useLoadScript({
+     googleMapsApiKey: process.env.NEXT_PUBLIC_MAPS_API_KEY || "",
+   });
+   const center = useMemo(
+     () => ({ lat: -33.984245817698465, lng: 18.47764 }),
+     []
+   );
+
+   const [chartData, setChartData] = useState<any[]>([])
+
+   const [solarConfigIndex, setSolarConfigIndex] = useState<number>(0);
+
+   const [solarData, setSolarData] = useState<DataResponse | null>(null);
+
+   const [coords, setCoords] = useState<{ lat: number; lng: number }>(center);
+  const [loading, setLoading] = useState(false)
+
+  const onSubmit = async (e:FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setLoading(true)
+
+
+    const {address} = Object.fromEntries(new FormData(e.currentTarget))
+
+    if (typeof address !== "string") return;
+
+     const encodedAddress = encodeURIComponent(address);
+
+     const gecodingUrl = new URL(
+       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${process.env.NEXT_PUBLIC_MAPS_API_KEY}`
+     );
+
+     const response = await fetch(gecodingUrl)
+       .then((res) => res.json())
+       .then((data) => data)
+       .catch((err) => console.log(err));
+
+     const data: GeocodingResponse = await response;
+
+     const { results, status } = data;
+
+     if (status !== "OK") return;
+
+     const {
+       geometry: { location },
+       formatted_address,
+       place_id,
+     } = results[0];
+
+     const url = new URL(
+       `https://solar.googleapis.com/v1/buildingInsights:findClosest?key=${process.env.NEXT_PUBLIC_MAPS_API_KEY}`
+     );
+
+     url.searchParams.append("location.latitude", location.lat.toString());
+     url.searchParams.append("location.longitude", location.lng.toString());
+
+
+    const res = await fetch(url, {
+      method: "GET",
+    })
+      .then((res) => res.json())
+      .then((data) => data)
+      .catch((err) => console.log(err));
+
+    const solar: DataResponse = await res;
+
+
+
+    setSolarData(solar);
+
+    setChartData(solar.solarPotential.solarPanelConfigs.map((config) => {
+      return {
+        name: config.panelsCount === 1 ? `${config.panelsCount} Panel` : `${config.panelsCount} Panels`,
+        output: config.yearlyEnergyDcKwh.toFixed(2),
+      }
+    }))
+
+    setCoords({ lat: solar.center.latitude, lng: solar.center.longitude });
+
+
+    setLoading(false);
+
+  }
+
+  console.log({solarConfigIndex})
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
+    <main className="">
+      <ScrollArea className="w-full h-[calc(100vh-40px)]">
+        <h1 className="text-2xl font-bold">
+          Solar Installation information tool
+        </h1>
+        <p className="text-md">
+          This tool is designed to help you find information about are
+          particular address. For the available areas you will be able to get
+          information on the total area of the roof, maximum sunshine hours,
+          maximum energy output in KwH at that location. You can use this to
+          generate an approximate quote for a solar installation
         </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+
+        <Separator className="my-3" />
+
+        <h2 className="text-xl font-bold">Enter your address</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 mt-8 gap-2">
+          <div className="w-full p-4">
+            <form onSubmit={onSubmit} className="w-full mt-4">
+              <div className="flex space-y-3 flex-col">
+                <Label htmlFor="address">Street Address</Label>
+                <Input name="address" id="address" type="text" />
+              </div>
+              <div className="mt-2">
+                <Button type="submit" disabled={loading}>
+                  Submit
+                </Button>
+              </div>
+            </form>
+            <Separator className="my-3" />
+            <div className="w-full">
+              {solarData === null ? (
+                <p className="text-lg font-medium">
+                  Please enter an address to retrieve the data.{" "}
+                </p>
+              ) : (
+                <div className="w-full">
+                  <h2 className="text-xl font-bold">Results</h2>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 mt-8 gap-2">
+                    <span>Total Roof Area</span>
+                    <span>
+                      {solarData.solarPotential.wholeRoofStats.areaMeters2.toFixed(
+                        2
+                      )}{" "}
+                      sqm
+                    </span>
+                  </div>
+                  <Separator className="my-1" />
+                  <p className="text-md ">
+                    The maximum area that can be covered by solar panels is:
+                    <strong>
+                      {solarData.solarPotential.maxArrayAreaMeters2.toFixed(2)}{" "}
+                      sqm
+                    </strong>
+                  </p>
+                  <Separator className="my-1" />
+                  <span>
+                    Maximum Sunshine Hours Per Year{" "}
+                    <strong>
+                      {solarData.solarPotential.maxSunshineHoursPerYear} hours
+                    </strong>
+                  </span>
+
+                  <Separator className="my-1" />
+                  <p>
+                    The roof at this address has{" "}
+                    <strong>
+                      {solarData.solarPotential.roofSegmentStats.length}{" "}
+                      sections/segments
+                    </strong>
+                  </p>
+                  <Separator className="my-1" />
+                  <p>
+                    The roof at this address has{" "}
+                    <strong>
+                      {solarData.solarPotential.solarPanelConfigs.length}{" "}
+                      possible solar panel configurations
+                    </strong>
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="w-full h-full text-white">
+            {isLoaded ? (
+              <GoogleMap
+                mapTypeId="satellite"
+                zoom={22}
+                center={coords}
+                mapContainerClassName="w-full w-full aspect-square"
+              >
+                <Polygon
+                  options={{
+                    strokeColor: "#FF0000",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: "#FF0000",
+                    fillOpacity: 0.35,
+                  }}
+                />
+
+                <Marker position={coords} />
+              </GoogleMap>
+            ) : (
+              <div className="w-full h-full">Loading...</div>
+            )}
+          </div>
         </div>
-      </div>
+        {solarData !== null && (
+          <div className="w-full">
+            <h2 className="text-2xl font-bold mt-4">
+              Solar Panel Configurations
+            </h2>
+            <Separator className="my-3" />
+            <div className="w-full flex space-x-3 items-start px-3">
+              <div className="w-1/3">
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <Button>Select Configuration</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <ScrollArea className="h-[600px]">
+                      {solarData.solarPotential.solarPanelConfigs.map(
+                        (config, index) => {
+                          return (
+                            <DropdownMenuItem
+                              key={index}
+                              onClick={() => setSolarConfigIndex(index)}
+                            >
+                              {config.panelsCount === 1
+                                ? `${config.panelsCount} Panel`
+                                : `${config.panelsCount} Panels`}
+                            </DropdownMenuItem>
+                          );
+                        }
+                      )}
+                    </ScrollArea>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Separator className="my-5" />
+                <h2 className="text-lg font-medium">Whole Roof Stats</h2>
+                <p>
+                  Total Roof Output:{" "}
+                  {solarData.solarPotential.solarPanelConfigs[
+                    solarConfigIndex
+                  ].yearlyEnergyDcKwh.toFixed(2)}{" "}
+                  KwH
+                </p>
+                <p>
+                  Number of Roof Segments:{" "}
+                  {
+                    solarData.solarPotential.solarPanelConfigs[solarConfigIndex]
+                      .roofSegmentSummaries.length
+                  }
+                  /{solarData.solarPotential.roofSegmentStats.length}
+                </p>
+                <p>
+                  Total Number of Panels:{" "}
+                  {
+                    solarData.solarPotential.solarPanelConfigs[solarConfigIndex]
+                      .panelsCount
+                  }
+                </p>
+              </div>
+              <div className="w-full">
+                <div className="flex-1 grid grid-cols-3 gap-4">
+                  {solarData.solarPotential.solarPanelConfigs[
+                    solarConfigIndex
+                  ].roofSegmentSummaries.map((config, index) => {
+                    return (
+                      <div
+                        key={index}
+                        className="w-full border border-slate-400 rounded-md p-3 shadow hover:shadow-md"
+                      >
+                        <h2 className="text-md font-medium">
+                          Roof Segement {config.segmentIndex}
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+                        </h2>
+                        <p className="text-sm">
+                          Azimuth {config.azimuthDegrees.toFixed(2)}&deg;{" "}
+                        </p>
+                        <p className="text-sm">
+                          Roof Pitch {config.pitchDegrees.toFixed(2)}&deg;{" "}
+                        </p>
+                        <p className="text-sm">Panels {config.panelsCount} </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </ScrollArea>
     </main>
-  )
+  );
 }

@@ -174,7 +174,7 @@ export default function Home() {
   console.log({solarConfigIndex})
 
   return (
-    <main className="">
+    <main className="container py-10">
       <ScrollArea className="w-full h-[calc(100vh-40px)]">
         <h1 className="text-2xl font-bold">
           Solar Installation information tool

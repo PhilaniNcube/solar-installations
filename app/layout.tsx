@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Container from '@/components/Layout/Container'
 import InnerContent from '@/components/Layout/InnerContent'
 import Script from 'next/script';
+import analytics from '@/utils/analytics';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -14,11 +15,14 @@ export const metadata: Metadata = {
   description: 'This is a tool to help you plan a solar installation at a property',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+
+analytics.page();
+
   return (
     <html lang="en">
       <Script

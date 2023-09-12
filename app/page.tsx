@@ -39,52 +39,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from '@/components/ui/use-toast'
+import { cn } from '@/lib/utils'
 
 
-const data = [
-  {
-    name: "Page A",
-    uv: 4000,
-    pv: 2400,
-    amt: 2400,
-  },
-  {
-    name: "Page B",
-    uv: 3000,
-    pv: 1398,
-    amt: 2210,
-  },
-  {
-    name: "Page C",
-    uv: 2000,
-    pv: 9800,
-    amt: 2290,
-  },
-  {
-    name: "Page D",
-    uv: 2780,
-    pv: 3908,
-    amt: 2000,
-  },
-  {
-    name: "Page E",
-    uv: 1890,
-    pv: 4800,
-    amt: 2181,
-  },
-  {
-    name: "Page F",
-    uv: 2390,
-    pv: 3800,
-    amt: 2500,
-  },
-  {
-    name: "Page G",
-    uv: 3490,
-    pv: 4300,
-    amt: 2100,
-  },
-];
 
 export default function Home() {
 
@@ -96,7 +53,25 @@ export default function Home() {
      []
    );
 
+   const [electricityData, setElectricityData] = useState({
+      bill: 0,
+      baseBill: 0,
+      discountBill: 0,
+      baseBillKwh: 0,
+      totalKwh: 0,
+      yearlyEnergyKwh: 0,
+   })
+
    const [chartData, setChartData] = useState<any[]>([])
+
+   // this is the service charge on each electricity bill
+   const serviceCharge = 252.09
+
+   // for the first 600kWh of usage the rate is 3.09
+   const discountRate = 3.09
+
+    // for usage over 600kWh of usage the rate is 4.27
+   const baseRate = 4.27
 
    const [solarConfigIndex, setSolarConfigIndex] = useState<number>(0);
 
@@ -110,9 +85,43 @@ export default function Home() {
     setLoading(true)
 
 
-    const {address} = Object.fromEntries(new FormData(e.currentTarget))
+    const {address, bill} = Object.fromEntries(new FormData(e.currentTarget))
 
-    if (typeof address !== "string") return;
+    if (typeof address !== "string" || typeof bill !== "string") return;
+
+    const electricityBill = parseInt(bill) * 12;
+
+    const discountBill = discountRate * 600;
+
+    const baseBill = parseInt(bill) - discountBill - serviceCharge;
+
+    const baseBillKwh = baseBill / baseRate;
+
+    const totalKwh = baseBillKwh + 600;
+
+    const yearlyEnergyKwh = totalKwh * 12;
+
+    console.log({
+      bill: parseInt(bill),
+      baseBill,
+      discountBill,
+      baseBillKwh,
+      totalKwh,
+      yearlyEnergyKwh,
+    });
+
+    setElectricityData({
+      bill: parseInt(bill),
+      baseBill,
+      discountBill,
+      baseBillKwh,
+      totalKwh,
+      yearlyEnergyKwh,
+    })
+
+
+
+
 
      const encodedAddress = encodeURIComponent(address);
 
@@ -136,6 +145,8 @@ export default function Home() {
        formatted_address,
        place_id,
      } = results[0];
+
+     console.log({formatted_address})
 
      const url = new URL(
        `https://solar.googleapis.com/v1/buildingInsights:findClosest?key=${process.env.NEXT_PUBLIC_MAPS_API_KEY}`
@@ -185,7 +196,7 @@ export default function Home() {
 
   }
 
-  console.log({solarConfigIndex})
+  console.log({solarData})
 
   return (
     <main className="container py-10">
@@ -211,6 +222,12 @@ export default function Home() {
                 <Label htmlFor="address">Street Address</Label>
                 <Input name="address" id="address" type="text" />
               </div>
+              <div className="my-3 flex space-y-3 flex-col">
+                <Label htmlFor="bill">
+                  What is your average monthly electricity bill
+                </Label>
+                <Input name="bill" id="bill" type="number" />
+              </div>
               <div className="mt-2">
                 <Button type="submit" disabled={loading}>
                   Submit
@@ -226,6 +243,14 @@ export default function Home() {
               ) : (
                 <div className="w-full">
                   <h2 className="text-xl font-bold">Results</h2>
+                  <div className="mt-4">
+                    <p className="text-md">
+                      Based on your montly electricity bill we estimate you use{" "}
+                      <span className="font-bold">
+                        {electricityData.yearlyEnergyKwh.toFixed(2)} kWh/year
+                      </span>
+                    </p>
+                  </div>
                   <div className="grid grid-cols-1 lg:grid-cols-2 mt-8 gap-2">
                     <span>Total Roof Area</span>
                     <span>
@@ -236,6 +261,7 @@ export default function Home() {
                     </span>
                   </div>
                   <Separator className="my-1" />
+
                   <p className="text-md ">
                     The maximum area that can be covered by solar panels is:
                     <strong>
@@ -247,7 +273,10 @@ export default function Home() {
                   <span>
                     Maximum Sunshine Hours Per Year{" "}
                     <strong>
-                      {solarData.solarPotential.maxSunshineHoursPerYear} hours
+                      {solarData.solarPotential.maxSunshineHoursPerYear.toFixed(
+                        2
+                      )}{" "}
+                      hours
                     </strong>
                   </span>
 
@@ -329,13 +358,37 @@ export default function Home() {
                 </DropdownMenu>
                 <Separator className="my-5" />
                 <h2 className="text-lg font-medium">Whole Roof Stats</h2>
-                <p>
-                  Total Roof Output:{" "}
-                  {solarData.solarPotential.solarPanelConfigs[
-                    solarConfigIndex
-                  ].yearlyEnergyDcKwh.toFixed(2)}{" "}
-                  KwH
+
+                <p className="text-md font-bold">
+                  Electricity Usage {electricityData.yearlyEnergyKwh.toFixed(2)}{" "}
+                  kWh/year
                 </p>
+
+                <p>
+                  Solar Panels Output:{" "}
+                  <span
+                    className={cn(
+                      "font-bold",
+                      electricityData.yearlyEnergyKwh >
+                        solarData.solarPotential.solarPanelConfigs[
+                          solarConfigIndex
+                        ].yearlyEnergyDcKwh
+                        ? "text-red-500"
+                        : "text-green-500"
+                    )}
+                  >
+                    {solarData.solarPotential.solarPanelConfigs[
+                      solarConfigIndex
+                    ].yearlyEnergyDcKwh.toFixed(2)}{" "}
+                    KwH
+                  </span>
+                </p>
+
+                {electricityData.yearlyEnergyKwh >
+                  solarData.solarPotential.solarPanelConfigs[solarConfigIndex]
+                    .yearlyEnergyDcKwh && (
+                  <p className="text-sm font-medium my-2 text-red-600">This configuration would not allow you to go off-grid?</p>
+                    )}
                 <p>
                   Number of Roof Segments:{" "}
                   {
@@ -364,7 +417,6 @@ export default function Home() {
                       >
                         <h2 className="text-md font-medium">
                           Roof Segement {config.segmentIndex}
-
                         </h2>
                         <p className="text-sm">
                           Azimuth {config.azimuthDegrees.toFixed(2)}&deg;{" "}

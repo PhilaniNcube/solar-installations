@@ -4,6 +4,24 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import Image from 'next/image'
 import { FormEvent, useMemo, useState } from "react";
 import {
@@ -54,13 +72,14 @@ export default function Home() {
    );
 
    const [electricityData, setElectricityData] = useState({
-      bill: 0,
-      baseBill: 0,
-      discountBill: 0,
-      baseBillKwh: 0,
-      totalKwh: 0,
-      yearlyEnergyKwh: 0,
-   })
+     bill: 0,
+     baseBill: 0,
+     discountBill: 0,
+     baseBillKwh: 0,
+     totalKwh: 0,
+     yearlyEnergyKwh: 0,
+     dailyEnergyKwh:0,
+   });
 
    const [chartData, setChartData] = useState<any[]>([])
 
@@ -80,14 +99,23 @@ export default function Home() {
    const [coords, setCoords] = useState<{ lat: number; lng: number }>(center);
   const [loading, setLoading] = useState(false)
 
+  const [solution, setSolution] = useState('')
+
   const onSubmit = async (e:FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
 
 
-    const {address, bill} = Object.fromEntries(new FormData(e.currentTarget))
+    const {address, bill, solution} = Object.fromEntries(new FormData(e.currentTarget))
 
-    if (typeof address !== "string" || typeof bill !== "string") return;
+    console.log({address, bill, solution})
+
+    if (
+      typeof address !== "string" ||
+      typeof bill !== "string" ||
+      typeof solution !== "string"
+    )
+      return;
 
     const electricityBill = parseInt(bill) * 12;
 
@@ -100,6 +128,8 @@ export default function Home() {
     const totalKwh = baseBillKwh + 600;
 
     const yearlyEnergyKwh = totalKwh * 12;
+
+    const dailyEnergyKwh = yearlyEnergyKwh / 365;
 
     console.log({
       bill: parseInt(bill),
@@ -117,7 +147,8 @@ export default function Home() {
       baseBillKwh,
       totalKwh,
       yearlyEnergyKwh,
-    })
+      dailyEnergyKwh,
+    });
 
 
 
@@ -196,7 +227,7 @@ export default function Home() {
 
   }
 
-  console.log({solarData})
+
 
   return (
     <main className="container py-10">
@@ -228,6 +259,20 @@ export default function Home() {
                 </Label>
                 <Input name="bill" id="bill" type="number" />
               </div>
+              <div className="my-3 flex space-y-3 flex-col">
+                <Select name="solution">
+                  <SelectTrigger className="">
+                    <SelectValue placeholder="Please select what type of solution you need.." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* <SelectLabel>Solar Installation Solution</SelectLabel> */}
+                    <SelectItem value="Off-Grid">Total Off Grid</SelectItem>
+                    <SelectItem value="Load Shedding Protection">
+                      Load Shedding Protection
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="mt-2">
                 <Button type="submit" disabled={loading}>
                   Submit
@@ -242,14 +287,143 @@ export default function Home() {
                 </p>
               ) : (
                 <div className="w-full">
-                  <h2 className="text-xl font-bold">Results</h2>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <Button>Select Configuration</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <ScrollArea className="h-[600px]">
+                        {solarData.solarPotential.solarPanelConfigs.map(
+                          (config, index) => {
+                            return (
+                              <DropdownMenuItem
+                                key={index}
+                                onClick={() => setSolarConfigIndex(index)}
+                              >
+                                {config.panelsCount === 1
+                                  ? `${config.panelsCount} Panel`
+                                  : `${config.panelsCount} Panels`}
+                              </DropdownMenuItem>
+                            );
+                          }
+                        )}
+                      </ScrollArea>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <div className="mt-4">
-                    <p className="text-md">
+                    {/* <p className="text-md">
                       Based on your montly electricity bill we estimate you use{" "}
                       <span className="font-bold">
                         {electricityData.yearlyEnergyKwh.toFixed(2)} kWh/year
                       </span>
-                    </p>
+                    </p> */}
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Yearly </TableHead>
+                          <TableHead>Monthly </TableHead>
+                          <TableHead>Daily </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell> Electricity Usage</TableCell>
+                          <TableCell>
+                            {" "}
+                            {electricityData.yearlyEnergyKwh.toFixed(2)}{" "}
+                            kWh/year
+                          </TableCell>
+                          <TableCell>
+                            {electricityData.totalKwh.toFixed(2)} kWh/year
+                          </TableCell>
+                          <TableCell>
+                            {electricityData.dailyEnergyKwh.toFixed(2)} kWh/year
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>
+                            {" "}
+                            Solar{" "}
+                            {
+                              solarData.solarPotential.solarPanelConfigs[
+                                solarConfigIndex
+                              ].panelsCount
+                            }{" "}
+                            panels
+                          </TableCell>
+                          <TableCell
+                            className={cn(
+                              "font-bold",
+                              electricityData.yearlyEnergyKwh >
+                                solarData.solarPotential.solarPanelConfigs[
+                                  solarConfigIndex
+                                ].yearlyEnergyDcKwh *
+                                  (460 /
+                                    solarData.solarPotential.panelCapacityWatts)
+                                ? "text-red-500"
+                                : "text-green-500"
+                            )}
+                          >
+                            {" "}
+                            {(
+                              solarData.solarPotential.solarPanelConfigs[
+                                solarConfigIndex
+                              ].yearlyEnergyDcKwh *
+                              (460 /
+                                solarData.solarPotential.panelCapacityWatts)
+                            ).toFixed(2)}{" "}
+                            kWh/year
+                          </TableCell>
+                          <TableCell
+                            className={cn(
+                              "font-bold",
+                              electricityData.yearlyEnergyKwh >
+                                solarData.solarPotential.solarPanelConfigs[
+                                  solarConfigIndex
+                                ].yearlyEnergyDcKwh *
+                                  (460 /
+                                    solarData.solarPotential.panelCapacityWatts)
+                                ? "text-red-500"
+                                : "text-green-500"
+                            )}
+                          >
+                            {(
+                              (solarData.solarPotential.solarPanelConfigs[
+                                solarConfigIndex
+                              ].yearlyEnergyDcKwh /
+                                12) *
+                              (460 /
+                                solarData.solarPotential.panelCapacityWatts)
+                            ).toFixed(2)}{" "}
+                            kWh/year
+                          </TableCell>
+                          <TableCell
+                            className={cn(
+                              "font-bold",
+                              electricityData.yearlyEnergyKwh >
+                                solarData.solarPotential.solarPanelConfigs[
+                                  solarConfigIndex
+                                ].yearlyEnergyDcKwh *
+                                  (460 /
+                                    solarData.solarPotential.panelCapacityWatts)
+                                ? "text-red-500"
+                                : "text-green-500"
+                            )}
+                          >
+                            {(
+                              (solarData.solarPotential.solarPanelConfigs[
+                                solarConfigIndex
+                              ].yearlyEnergyDcKwh /
+                                365) *
+                              (460 /
+                                solarData.solarPotential.panelCapacityWatts)
+                            ).toFixed(2)}{" "}
+                            kWh/year
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
                   </div>
                   <div className="grid grid-cols-1 lg:grid-cols-2 mt-8 gap-2">
                     <span>Total Roof Area</span>
@@ -333,30 +507,7 @@ export default function Home() {
             <Separator className="my-3" />
             <div className="w-full flex space-x-3 items-start px-3">
               <div className="w-1/3">
-                <DropdownMenu>
-                  <DropdownMenuTrigger>
-                    <Button>Select Configuration</Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <ScrollArea className="h-[600px]">
-                      {solarData.solarPotential.solarPanelConfigs.map(
-                        (config, index) => {
-                          return (
-                            <DropdownMenuItem
-                              key={index}
-                              onClick={() => setSolarConfigIndex(index)}
-                            >
-                              {config.panelsCount === 1
-                                ? `${config.panelsCount} Panel`
-                                : `${config.panelsCount} Panels`}
-                            </DropdownMenuItem>
-                          );
-                        }
-                      )}
-                    </ScrollArea>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Separator className="my-5" />
+
                 <h2 className="text-lg font-medium">Whole Roof Stats</h2>
 
                 <p className="text-md font-bold">
@@ -364,31 +515,9 @@ export default function Home() {
                   kWh/year
                 </p>
 
-                <p>
-                  Solar Panels Output:{" "}
-                  <span
-                    className={cn(
-                      "font-bold",
-                      electricityData.yearlyEnergyKwh >
-                        solarData.solarPotential.solarPanelConfigs[
-                          solarConfigIndex
-                        ].yearlyEnergyDcKwh
-                        ? "text-red-500"
-                        : "text-green-500"
-                    )}
-                  >
-                    {solarData.solarPotential.solarPanelConfigs[
-                      solarConfigIndex
-                    ].yearlyEnergyDcKwh.toFixed(2)}{" "}
-                    KwH
-                  </span>
-                </p>
 
-                {electricityData.yearlyEnergyKwh >
-                  solarData.solarPotential.solarPanelConfigs[solarConfigIndex]
-                    .yearlyEnergyDcKwh && (
-                  <p className="text-sm font-medium my-2 text-red-600">This configuration would not allow you to go off-grid?</p>
-                    )}
+
+
                 <p>
                   Number of Roof Segments:{" "}
                   {

@@ -7,69 +7,42 @@ import { Separator } from '@/components/ui/separator'
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import Image from 'next/image'
 import { FormEvent, useMemo, useState } from "react";
 import {
   GoogleMap,
   useLoadScript,
   Marker,
-  GoogleMapProps,
-  Polygon,
-  OverlayView,
-  PolygonF
 } from "@react-google-maps/api";
 import { DataResponse, DataResponseError, GeocodingResponse } from "@/interfaces";
-import { AreaChart } from 'lucide-react'
-import {
-  BarChart,
-  Bar,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
+import getDirection from '@/lib/getDirection'
+import Map from '@/components/map'
 
 
 
 export default function Home() {
 
-   const { isLoaded, loadError } = useLoadScript({
-     googleMapsApiKey: process.env.NEXT_PUBLIC_MAPS_API_KEY || "",
-   });
-   const center = useMemo(
-     () => ({ lat: -33.984245817698465, lng: 18.47764 }),
-     []
-   );
+
 
    const [electricityData, setElectricityData] = useState({
      bill: 0,
@@ -81,7 +54,6 @@ export default function Home() {
      dailyEnergyKwh:0,
    });
 
-   const [chartData, setChartData] = useState<any[]>([])
 
    // this is the service charge on each electricity bill
    const serviceCharge = 252.09
@@ -96,10 +68,12 @@ export default function Home() {
 
    const [solarData, setSolarData] = useState<DataResponse | null>(null);
 
-   const [coords, setCoords] = useState<{ lat: number; lng: number }>(center);
+   const [coords, setCoords] = useState<{ lat: number; lng: number }>({
+     lat: 33,
+     lng: 18,
+   });
   const [loading, setLoading] = useState(false)
 
-  const [solution, setSolution] = useState('')
 
   const onSubmit = async (e:FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -213,12 +187,8 @@ export default function Home() {
 
     setSolarData(solar);
 
-    setChartData(solar.solarPotential.solarPanelConfigs.map((config) => {
-      return {
-        name: config.panelsCount === 1 ? `${config.panelsCount} Panel` : `${config.panelsCount} Panels`,
-        output: config.yearlyEnergyDcKwh.toFixed(2),
-      }
-    }))
+    console.log("Solar", solar);
+
 
     setCoords({ lat: solar.center.latitude, lng: solar.center.longitude });
 
@@ -335,10 +305,10 @@ export default function Home() {
                             kWh/year
                           </TableCell>
                           <TableCell>
-                            {electricityData.totalKwh.toFixed(2)} kWh/year
+                            {electricityData.totalKwh.toFixed(2)} kWh/month
                           </TableCell>
                           <TableCell>
-                            {electricityData.dailyEnergyKwh.toFixed(2)} kWh/year
+                            {electricityData.dailyEnergyKwh.toFixed(2)} kWh/day
                           </TableCell>
                         </TableRow>
                         <TableRow>
@@ -396,7 +366,7 @@ export default function Home() {
                               (460 /
                                 solarData.solarPotential.panelCapacityWatts)
                             ).toFixed(2)}{" "}
-                            kWh/year
+                            kWh/month
                           </TableCell>
                           <TableCell
                             className={cn(
@@ -419,7 +389,7 @@ export default function Home() {
                               (460 /
                                 solarData.solarPotential.panelCapacityWatts)
                             ).toFixed(2)}{" "}
-                            kWh/year
+                            kWh/day
                           </TableCell>
                         </TableRow>
                       </TableBody>
@@ -475,28 +445,7 @@ export default function Home() {
             </div>
           </div>
           <div className="w-full h-full text-white">
-            {isLoaded ? (
-              <GoogleMap
-                mapTypeId="satellite"
-                zoom={22}
-                center={coords}
-                mapContainerClassName="w-full w-full aspect-square"
-              >
-                <Polygon
-                  options={{
-                    strokeColor: "#FF0000",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    fillColor: "#FF0000",
-                    fillOpacity: 0.35,
-                  }}
-                />
-
-                <Marker position={coords} />
-              </GoogleMap>
-            ) : (
-              <div className="w-full h-full">Loading...</div>
-            )}
+             <Map coords={coords} />
           </div>
         </div>
         {solarData !== null && (
@@ -548,7 +497,7 @@ export default function Home() {
                           Roof Segement {config.segmentIndex}
                         </h2>
                         <p className="text-sm">
-                          Azimuth {config.azimuthDegrees.toFixed(2)}&deg;{" "}
+                          Facing {getDirection(config.azimuthDegrees)}
                         </p>
                         <p className="text-sm">
                           Roof Pitch {config.pitchDegrees.toFixed(2)}&deg;{" "}

@@ -256,30 +256,53 @@ export default function Home() {
                   Please enter an address to retrieve the data.{" "}
                 </p>
               ) : (
-                <div className="w-full">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger>
-                      <Button>Select Configuration</Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <ScrollArea className="h-[600px]">
-                        {solarData.solarPotential.solarPanelConfigs.map(
-                          (config, index) => {
-                            return (
-                              <DropdownMenuItem
-                                key={index}
-                                onClick={() => setSolarConfigIndex(index)}
-                              >
-                                {config.panelsCount === 1
-                                  ? `${config.panelsCount} Panel`
-                                  : `${config.panelsCount} Panels`}
-                              </DropdownMenuItem>
-                            );
-                          }
-                        )}
-                      </ScrollArea>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                <div className="w-full ">
+                  <div className="flex justify-between items-center">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger>
+                        <Button>Select Configuration</Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <ScrollArea className="h-[600px]">
+                          {solarData.solarPotential.solarPanelConfigs.map(
+                            (config, index) => {
+                              return (
+                                <DropdownMenuItem
+                                  key={index}
+                                  onClick={() => setSolarConfigIndex(index)}
+                                >
+                                  {config.panelsCount === 1
+                                    ? `${config.panelsCount} Panel`
+                                    : `${config.panelsCount} Panels`}
+                                </DropdownMenuItem>
+                              );
+                            }
+                          )}
+                        </ScrollArea>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger>
+                        <Button>Select Solar Panel</Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <ScrollArea className="h-[600px]">
+                          {solarPanels.map(
+                            (panel, index) => {
+                              return (
+                                <DropdownMenuItem
+                                  key={index}
+                                  onClick={() => setSelectedPanel(panel)}
+                                >
+                                  {panel.manufacturer} - {panel.maxPower} Watts
+                                </DropdownMenuItem>
+                              );
+                            }
+                          )}
+                        </ScrollArea>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                   <div className="mt-4">
                     {/* <p className="text-md">
                       Based on your montly electricity bill we estimate you use{" "}
@@ -329,7 +352,7 @@ export default function Home() {
                                 solarData.solarPotential.solarPanelConfigs[
                                   solarConfigIndex
                                 ].yearlyEnergyDcKwh *
-                                  (460 /
+                                  (panel.maxPower /
                                     solarData.solarPotential.panelCapacityWatts)
                                 ? "text-red-500"
                                 : "text-green-500"
@@ -340,7 +363,7 @@ export default function Home() {
                               solarData.solarPotential.solarPanelConfigs[
                                 solarConfigIndex
                               ].yearlyEnergyDcKwh *
-                              (460 /
+                              (panel.maxPower /
                                 solarData.solarPotential.panelCapacityWatts)
                             ).toFixed(2)}{" "}
                             kWh/year
@@ -352,7 +375,7 @@ export default function Home() {
                                 solarData.solarPotential.solarPanelConfigs[
                                   solarConfigIndex
                                 ].yearlyEnergyDcKwh *
-                                  (460 /
+                                  (panel.maxPower /
                                     solarData.solarPotential.panelCapacityWatts)
                                 ? "text-red-500"
                                 : "text-green-500"
@@ -363,7 +386,7 @@ export default function Home() {
                                 solarConfigIndex
                               ].yearlyEnergyDcKwh /
                                 12) *
-                              (460 /
+                              (panel.maxPower /
                                 solarData.solarPotential.panelCapacityWatts)
                             ).toFixed(2)}{" "}
                             kWh/month
@@ -375,7 +398,7 @@ export default function Home() {
                                 solarData.solarPotential.solarPanelConfigs[
                                   solarConfigIndex
                                 ].yearlyEnergyDcKwh *
-                                  (460 /
+                                  (panel.maxPower /
                                     solarData.solarPotential.panelCapacityWatts)
                                 ? "text-red-500"
                                 : "text-green-500"
@@ -386,7 +409,7 @@ export default function Home() {
                                 solarConfigIndex
                               ].yearlyEnergyDcKwh /
                                 365) *
-                              (460 /
+                              (panel.maxPower /
                                 solarData.solarPotential.panelCapacityWatts)
                             ).toFixed(2)}{" "}
                             kWh/day
@@ -445,7 +468,7 @@ export default function Home() {
             </div>
           </div>
           <div className="w-full h-full text-white">
-             <Map coords={coords} />
+            <Map coords={coords} />
           </div>
         </div>
         {solarData !== null && (
@@ -456,16 +479,12 @@ export default function Home() {
             <Separator className="my-3" />
             <div className="w-full flex space-x-3 items-start px-3">
               <div className="w-1/3">
-
                 <h2 className="text-lg font-medium">Whole Roof Stats</h2>
 
                 <p className="text-md font-bold">
                   Electricity Usage {electricityData.yearlyEnergyKwh.toFixed(2)}{" "}
                   kWh/year
                 </p>
-
-
-
 
                 <p>
                   Number of Roof Segments:{" "}

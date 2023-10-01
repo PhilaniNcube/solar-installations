@@ -176,3 +176,6 @@ const solarPanels = [
      manufacturer: "Canadian Solar"
   },
 ]
+
+
+export default solarPanels

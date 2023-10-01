@@ -1,5 +1,5 @@
 "use client"
-
+import solarPanels from "@/data/solar-panels";
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,12 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FormEvent, useMemo, useState } from "react";
-import {
-  GoogleMap,
-  useLoadScript,
-  Marker,
-} from "@react-google-maps/api";
+import { FormEvent, useState } from "react";
+
 import { DataResponse, DataResponseError, GeocodingResponse } from "@/interfaces";
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
@@ -42,6 +38,8 @@ import Map from '@/components/map'
 
 export default function Home() {
 
+  const [panel, setSelectedPanel] = useState(solarPanels[0]);
+
 
 
    const [electricityData, setElectricityData] = useState({
@@ -53,6 +51,8 @@ export default function Home() {
      yearlyEnergyKwh: 0,
      dailyEnergyKwh:0,
    });
+
+
 
 
    // this is the service charge on each electricity bill

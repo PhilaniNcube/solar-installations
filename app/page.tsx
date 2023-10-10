@@ -522,6 +522,8 @@ export default function Home() {
                           Roof Pitch {config.pitchDegrees.toFixed(2)}&deg;{" "}
                         </p>
                         <p className="text-sm">Panels {config.panelsCount} </p>
+                        <p className="text-sm">
+                          Area {solarData.solarPotential.roofSegmentStats[config.segmentIndex].stats.areaMeters2} sqm</p>
                       </div>
                     );
                   })}

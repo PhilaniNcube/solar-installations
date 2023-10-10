@@ -5,7 +5,7 @@ import { GoogleMap, useLoadScript, Marker } from "@react-google-maps/api";
 const Map = ({ coords }:{ coords: {lat:number, lng: number}}) => {
 
     const { isLoaded, loadError } = useLoadScript({
-      googleMapsApiKey: process.env.NEXT_PUBLIC_MAPS_API_KEY || "",
+      googleMapsApiKey: process.env.NEXT_PUBLIC_MAPS_API_KEY!,
     });
 
 
@@ -16,6 +16,8 @@ const Map = ({ coords }:{ coords: {lat:number, lng: number}}) => {
     }),
     [coords]
   );
+
+  console.log("Map", center)
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -28,7 +30,7 @@ const Map = ({ coords }:{ coords: {lat:number, lng: number}}) => {
       center={center}
       mapContainerClassName="w-full w-full aspect-square"
     >
-      <Marker position={coords} />
+      <Marker position={center} />
     </GoogleMap>
   );
 };

@@ -216,20 +216,20 @@ export default function Home() {
         <Separator className="my-3" />
 
         <h2 className="text-xl font-bold">Enter your address</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 mt-8 gap-2">
+        <div className="grid grid-cols-1 gap-2 mt-8 lg:grid-cols-2">
           <div className="w-full p-4">
             <form onSubmit={onSubmit} className="w-full mt-4">
-              <div className="flex space-y-3 flex-col">
+              <div className="flex flex-col space-y-3">
                 <Label htmlFor="address">Street Address</Label>
                 <Input name="address" id="address" type="text" />
               </div>
-              <div className="my-3 flex space-y-3 flex-col">
+              <div className="flex flex-col my-3 space-y-3">
                 <Label htmlFor="bill">
                   What is your average monthly electricity bill
                 </Label>
                 <Input name="bill" id="bill" type="number" />
               </div>
-              <div className="my-3 flex space-y-3 flex-col">
+              <div className="flex flex-col my-3 space-y-3">
                 <Select name="solution">
                   <SelectTrigger className="">
                     <SelectValue placeholder="Please select what type of solution you need.." />
@@ -257,7 +257,7 @@ export default function Home() {
                 </p>
               ) : (
                 <div className="w-full ">
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <DropdownMenu>
                       <DropdownMenuTrigger>
                         <Button>Select Configuration</Button>
@@ -418,7 +418,7 @@ export default function Home() {
                       </TableBody>
                     </Table>
                   </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 mt-8 gap-2">
+                  <div className="grid grid-cols-1 gap-2 mt-8 lg:grid-cols-2">
                     <span>Total Roof Area</span>
                     <span>
                       {solarData.solarPotential.wholeRoofStats.areaMeters2.toFixed(
@@ -473,15 +473,15 @@ export default function Home() {
         </div>
         {solarData !== null && (
           <div className="w-full">
-            <h2 className="text-2xl font-bold mt-4">
+            <h2 className="mt-4 text-2xl font-bold">
               Solar Panel Configurations
             </h2>
             <Separator className="my-3" />
-            <div className="w-full flex space-x-3 items-start px-3">
+            <div className="flex items-start w-full px-3 space-x-3">
               <div className="w-1/3">
                 <h2 className="text-lg font-medium">Whole Roof Stats</h2>
 
-                <p className="text-md font-bold">
+                <p className="font-bold text-md">
                   Electricity Usage {electricityData.yearlyEnergyKwh.toFixed(2)}{" "}
                   kWh/year
                 </p>
@@ -503,16 +503,16 @@ export default function Home() {
                 </p>
               </div>
               <div className="w-full">
-                <div className="flex-1 grid grid-cols-3 gap-4">
+                <div className="grid flex-1 grid-cols-3 gap-4">
                   {solarData.solarPotential.solarPanelConfigs[
                     solarConfigIndex
                   ].roofSegmentSummaries.map((config, index) => {
                     return (
                       <div
                         key={index}
-                        className="w-full border border-slate-400 rounded-md p-3 shadow hover:shadow-md"
+                        className="w-full p-3 border rounded-md shadow border-slate-400 hover:shadow-md"
                       >
-                        <h2 className="text-md font-medium">
+                        <h2 className="font-medium text-md">
                           Roof Segement {config.segmentIndex}
                         </h2>
                         <p className="text-sm">
